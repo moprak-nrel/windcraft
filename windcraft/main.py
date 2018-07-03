@@ -77,6 +77,8 @@ def main():
     # Solver
     solver = wc.Solver(wind_farm.width, wind_farm.height)
     solver_steps = int(0.12 / (solver.dt * fps))
+    if(solver_steps <= 0):
+        solver_steps=30
 
     # Player
     player = wc.Player()

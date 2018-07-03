@@ -172,7 +172,7 @@ class Solver():
                 else:
                     self.presmat[myself][mynorth] += 1.0/dy2
 
-        print self.presmat
+        #print self.presmat
 
     def advectdiffuse(self):
         """Calculate advective term of NS with upwinding."""
