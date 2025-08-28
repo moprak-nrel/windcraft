@@ -7,12 +7,6 @@
 #
 # ========================================================================
 import numpy as np
-import matplotlib
-import colorcet as cc
-
-matplotlib.use("Agg")
-import matplotlib.backends.backend_agg as agg
-import matplotlib.pyplot as plt
 
 
 # ========================================================================
@@ -21,11 +15,8 @@ import matplotlib.pyplot as plt
 #
 # ========================================================================
 class Solver:
-    """This represents the solver."""
-
-    def __init__(self, farm_width, farm_height):
+    def __init__(self, npts, farm_width, farm_height):
         """Constructor for Solver.
-
         :param farm_width: wind farm width
         :type farm_width: int
         :param farm_height: wind farm height
@@ -38,16 +29,15 @@ class Solver:
         self.North = 3
 
         # Geometry
-        npoints = 20
+        npoints = npts
         self.height = 1.0
         self.width = self.height * farm_width / farm_height
-
         self.nnodes = np.array([int(npoints * self.width), int(npoints)])
         self.ncells = self.nnodes - 1
-
-        self.dx = self.width / float(self.ncells[0])
-        self.dy = self.height / float(self.ncells[1])
+        self.dx = self.width / (self.nnodes[0] - 1)
+        self.dy = self.height / (self.nnodes[1] - 1)
         self.dxmin = min(self.dx, self.dy)
+        print("ncells:", self.ncells)
 
         # u is cell centered along y and node centered along x
         # v is node centered along y and cell centered along x
@@ -65,9 +55,6 @@ class Solver:
         # pressure is cell centered along x and y
         self.p = np.zeros((self.ncells[1] + 2, self.ncells[0] + 2))
 
-        # umag
-        self.umag = np.zeros((self.ncells[1], self.ncells[0]))
-
         # pressure is cell centered along x and y
         self.div = np.zeros((self.ncells[1] + 2, self.ncells[0] + 2))
         self.divl2norm = 0.0
@@ -75,39 +62,13 @@ class Solver:
         # Start from scratch
         self.reset()
 
-        # Plotting
-        self.fig = plt.figure(0, figsize=[1, farm_height / farm_width], dpi=farm_width)
-        self.ax = plt.Axes(self.fig, [0.0, 0.0, 1.0, 1.0])
-        self.ax.axis("off")
-        self.fig.add_axes(self.ax)
-        # self.cmap = cc.cm["diverging_bkr_55_10_c35"]
-        # self.cmap = cc.cm["fire"]
-        # self.cmap = plt.get_cmap("Blues_r")
-        self.cmap = cc.cm["kbc"]
-        self.canvas = agg.FigureCanvasAgg(self.fig)
-        self.renderer = self.canvas.get_renderer()
-        self.im = self.ax.imshow(
-            self.umag.T,
-            interpolation="none",
-            cmap=self.cmap,
-            vmin=0.3,
-            vmax=self.u0 * 1.3,
-            origin="lower",
-            aspect="auto",
-        )
-
     def reset(self):
         """Reset the solver."""
         self.u0 = 4.0
-        self.v_pert = self.u0 * 0.1
-        self.dpdx = 2.0
-        self.power = 0.0
-        self.time = 0.0
         self.step = 0
         self.cfl = 0.5
-        self.dt = self.dx / (3 * self.u0) * self.cfl
+        self.dt = min(self.dx, self.dy) / (3 * self.u0) * self.cfl
         self.visc = 0.01
-        self.niter = 50
 
         self.ubc[:, :] = self.u0
         self.apply_velocity_bc()
@@ -116,23 +77,14 @@ class Solver:
 
         self.fillpresmat()
 
-    def solve(self, steps, turbines):
-        """Solve the incompressible Euler equations.
-
-        :param steps: number of time steps to solve
-        :type steps: int
-        :param turbines: turbines in domain
-        :type steps: list
-        """
-        self.power = 0
-        print("steps:", steps)
+    def solve(self, steps):
+        """Solve the incompressible Euler equations."""
         for step in range(steps):
             # Apply boundary conditions
             self.apply_velocity_bc()
 
             # Advection update
             self.advectdiffuse()
-            power = self.turbine_update(turbines)
             self.computediv()
             print("velocity divergence before projection:", self.divl2norm)
 
@@ -145,33 +97,16 @@ class Solver:
             print("velocity divergence after projection:", self.divl2norm)
             print("==================================================")
 
-            # Turbines
-
-            # Pressure gradient, power output, increments
-            # self.u += self.dt * self.dpdx
-            self.power += self.dt * power
-            self.time += self.dt
-            self.step += 1
-
-        self.power /= steps
-
-    def computediv(self):
-        dudx = np.diff(self.ubc[1:-1, 1:-1], axis=1) / self.dx
-        dvdy = np.diff(self.vbc[1:-1, 1:-1], axis=0) / self.dy
-
-        self.div[1:-1, 1:-1] = dudx + dvdy
-        self.divl2norm = np.linalg.norm(self.div.flatten())
-
     def apply_velocity_bc(self):
         """Apply the boundary conditions on velocity.
         The inlet is a constant flow.
-        The top, bottom are zero gradient outflow
+        The top, bottom are walls
         and outlet are zero gradient.
         """
         # West (inflow)
         self.ubc[:, 0] = self.u0
         self.ubc[:, 1] = self.u0
-        self.vbc[:, 0] = self.v_pert * np.sin(np.pi * self.time * 10)
+        self.vbc[:, 0] = 0.0
         self.presbc[self.West] = 0.0  # neumann bc
 
         # East (outflow - zero gradient)
@@ -180,17 +115,56 @@ class Solver:
         self.presbc[self.East] = 1.0  # dirchlet bc
         self.presbcvals[self.East] = 0.0
 
-        # South (outflow - zero gradient)
-        self.ubc[0, 1:-1] = self.ubc[1, 1:-1]
-        self.vbc[0, 1:-1] = self.vbc[1, 1:-1]
-        self.presbc[self.South] = 1.0  # dirichlet bc
-        self.presbcvals[self.South] = 0.0
+        # South (wall)
+        self.ubc[0, 1:-1] = 0.0
+        self.vbc[0, 1:-1] = 0.0
+        self.vbc[1, 1:-1] = 0.0
+        self.presbc[self.South] = 0.0  # neumann bc
 
         # North (wall)
-        self.ubc[-1, 1:-1] = self.ubc[-2, 1:-1]
-        self.vbc[-1, 1:-1] = self.vbc[-2, 1:-1]
-        self.presbc[self.North] = 1.0  # neumann bc
-        self.presbcvals[self.South] = 0.0
+        self.ubc[-1, 1:-1] = 0.0
+        self.vbc[-1, 1:-1] = 0.0
+        self.vbc[-2, 1:-1] = 0.0
+        self.presbc[self.North] = 0.0  # neumann bc
+
+    def fillpresmat(self):
+        self.presrhs[:] = 0.0
+        self.presmat[:, :] = 0.0
+        dx2 = self.dx**2
+        dy2 = self.dy**2
+        # compute pressure matrix coefficients only once since they don't change
+        # doing this for neumann bc first
+        for j in range(self.ncells[1]):
+            for i in range(self.ncells[0]):
+                myself = j * self.ncells[0] + i
+                mywest = j * self.ncells[0] + i - 1
+                myeast = j * self.ncells[0] + i + 1
+                mysouth = (j - 1) * self.ncells[0] + i
+                mynorth = (j + 1) * self.ncells[0] + i
+
+                self.presmat[myself][myself] -= 2.0 / dx2 + 2.0 / dy2
+
+                if (i - 1) < 0:  # west boundary (homogenous neumann)
+                    self.presmat[myself][myself] += 1.0 / dx2
+                else:
+                    self.presmat[myself][mywest] += 1.0 / dx2
+
+                if (i + 1) > self.ncells[0] - 1:  # east boundary (dirichlet)
+                    self.presrhs[myself] -= self.presbcvals[self.East] / dx2
+                else:
+                    self.presmat[myself][myeast] += 1.0 / dx2
+
+                if (j - 1) < 0:  # south boundary (homogenous neumann)
+                    self.presmat[myself][myself] += 1.0 / dy2
+                else:
+                    self.presmat[myself][mysouth] += 1.0 / dy2
+
+                if (j + 1) > self.ncells[1] - 1:  # north boundary (homogenous neumann)
+                    self.presmat[myself][myself] += 1.0 / dy2
+                else:
+                    self.presmat[myself][mynorth] += 1.0 / dy2
+
+        # print self.presmat
 
     def advectdiffuse(self):
         """Calculate advective term of NS with upwinding."""
@@ -248,45 +222,6 @@ class Solver:
             self.visc * (d2vdx2 + d2vdy2) - (vudx + v2dy)
         )
 
-    def fillpresmat(self):
-        self.presrhs[:] = 0.0
-        self.presmat[:, :] = 0.0
-        dx2 = self.dx**2
-        dy2 = self.dy**2
-        # compute pressure matrix coefficients only once since they don't change
-        # doing this for neumann bc first
-        for j in range(self.ncells[1]):
-            for i in range(self.ncells[0]):
-                myself = j * self.ncells[0] + i
-                mywest = j * self.ncells[0] + i - 1
-                myeast = j * self.ncells[0] + i + 1
-                mysouth = (j - 1) * self.ncells[0] + i
-                mynorth = (j + 1) * self.ncells[0] + i
-
-                self.presmat[myself][myself] -= 2.0 / dx2 + 2.0 / dy2
-
-                if (i - 1) < 0:  # west boundary (homogenous neumann)
-                    self.presmat[myself][myself] += 1.0 / dx2
-                else:
-                    self.presmat[myself][mywest] += 1.0 / dx2
-
-                if (i + 1) > self.ncells[0] - 1:  # east boundary (dirichlet)
-                    self.presrhs[myself] -= self.presbcvals[self.East] / dx2
-                else:
-                    self.presmat[myself][myeast] += 1.0 / dx2
-
-                if (j - 1) < 0:  # south boundary (dirichlet)
-                    self.presrhs[myself] -= self.presbcvals[self.South] / dy2
-                else:
-                    self.presmat[myself][mysouth] += 1.0 / dy2
-
-                if (j + 1) > self.ncells[1] - 1:  # north boundary (dirichley)
-                    self.presrhs[myself] -= self.presbcvals[self.North] / dy2
-                else:
-                    self.presmat[myself][mynorth] += 1.0 / dy2
-
-        # print self.presmat
-
     def project_velocity(self):
         """Project the velocity field."""
         self.ubc[1:-1, 1:-1] -= np.diff(self.p, axis=1)[1:-1, :] / self.dx
@@ -299,11 +234,11 @@ class Solver:
         # East (Dirchlet)
         self.p[:, -1] = self.presbcvals[self.East]
 
-        # South (Dirichlet)
-        self.p[0, :] = self.presbcvals[self.South]
+        # South (homogenous neumann)
+        self.p[0, :] = self.p[1, :]
 
-        # North (Dirichlet)
-        self.p[-1, :] = self.presbcvals[self.North]
+        # North (homogenous neumann)
+        self.p[-1, :] = self.p[-2, :]
 
     def solve_pressure_poisson(self):
         """Solve the Poisson equation for pressure."""
@@ -320,40 +255,12 @@ class Solver:
         self.p[1:-1, 1:-1] = psoln.reshape(self.ncells[1], self.ncells[0])
         self.apply_pres_bc()
 
-    def turbine_update(self, turbines):
-        """Update the turbines and flow field.
+    def computediv(self):
+        dudx = np.diff(self.ubc[1:-1, 1:-1], axis=1) / self.dx
+        dvdy = np.diff(self.vbc[1:-1, 1:-1], axis=0) / self.dy
 
-        :param turbines: turbines in farm
-        :type turbines: list
-        """
-        power = 0
-        for turbine in turbines:
-            # Turbine location and size
-            idx = int(turbine.relative_pos[0] * self.nnodes[0])
-            idy = int((1 - turbine.relative_pos[1]) * self.nnodes[1])
-            radius = int(turbine.radius * self.nnodes[1])
-
-            # Update turbine speed
-            turbine.update(np.mean(self.ubc[idy - radius : idy + radius + 1, idx + 1]))
-
-            # Apply the turbine force
-            force = -0.5 * 4.0 / 3.0 * 0.75 * turbine.speed**2 / self.dy
-            power -= force
-            self.ubc[idy - radius : idy + radius + 1, idx + 1] += self.dt * force
-
-        return power
-
-    def draw_field(self):
-        """Make a raw canvas of a field for pygame."""
-
-        self.apply_velocity_bc()
-        self.umag = np.sqrt(
-            xavg((self.ubc) ** 2)[1:-1, 1:-1] + yavg((self.vbc) ** 2)[1:-1, 1:-1]
-        )
-
-        self.im.set_data(self.umag)
-        self.canvas.draw()
-        self.raw_canvas = self.renderer.tostring_argb()
+        self.div[1:-1, 1:-1] = dudx + dvdy
+        self.divl2norm = np.linalg.norm(self.div.flatten())
 
 
 def yavg(f):
@@ -374,25 +281,3 @@ def xavg(f):
     :rtype: array
     """
     return 0.5 * (f[:, 1:] + f[:, :-1])
-
-
-def p_iterate(p, dxinv):
-    """Calculate iteration for Poisson solver (with BC).
-
-    :param p: pressure
-    :type p: array
-    :return: pressure iterate
-    :rtype: array
-    """
-
-    iterate = (
-        np.roll(p, 1, axis=1)
-        + np.roll(p, -1, axis=1)
-        + np.roll(p, 1, axis=0)
-        + np.roll(p, -1, axis=0)
-    )
-
-    # Apply non-periodic BC on left/right
-    iterate[0, :] -= p[-1, :]
-    iterate[-1, :] -= p[0, :]
-    return iterate
