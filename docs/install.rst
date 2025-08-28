@@ -1,7 +1,7 @@
 Installation
 ============
 
-The package is available on Github::
+The package is available on Github:
 
 .. code-block:: bash
 
