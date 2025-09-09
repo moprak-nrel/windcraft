@@ -1,4 +1,3 @@
-
 try:
     __WINDCRAFT_SETUP__ = True
 except NameError:
