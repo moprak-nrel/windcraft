@@ -13,9 +13,11 @@ directory structure.
 # Imports
 #
 # ========================================================================
-import sys
-import pygame
 import argparse
+import sys
+
+import pygame
+
 import windcraft as wc
 
 

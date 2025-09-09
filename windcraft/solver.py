@@ -6,9 +6,9 @@
 # Imports
 #
 # ========================================================================
-import numpy as np
-import matplotlib
 import colorcet as cc
+import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.backends.backend_agg as agg
@@ -60,7 +60,7 @@ class Solver:
         self.presmat = np.zeros(
             (self.ncells[0] * self.ncells[1], self.ncells[0] * self.ncells[1])
         )
-        self.presrhs = np.zeros((self.ncells[0] * self.ncells[1]))
+        self.presrhs = np.zeros(self.ncells[0] * self.ncells[1])
 
         # pressure is cell centered along x and y
         self.p = np.zeros((self.ncells[1] + 2, self.ncells[0] + 2))
@@ -126,7 +126,7 @@ class Solver:
         """
         self.power = 0
         print("steps:", steps)
-        for step in range(steps):
+        for _step in range(steps):
             # Apply boundary conditions
             self.apply_velocity_bc()
 

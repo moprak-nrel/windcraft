@@ -8,6 +8,7 @@
 #
 # ========================================================================
 import pygame
+
 import windcraft.colors as colors
 import windcraft.fonts as fonts
 

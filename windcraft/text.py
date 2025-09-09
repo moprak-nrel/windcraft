@@ -8,6 +8,7 @@
 #
 # ========================================================================
 import pygame
+
 import windcraft.colors as colors
 import windcraft.fonts as fonts
 
@@ -69,7 +70,7 @@ class Text:
         ystart = 0.15 * pygame.display.get_surface().get_height()
         scaling_factor = 100
         text = self.fonts.types["medium"].render(
-            "Power produced: {0:.2f} kW".format(scaling_factor * power),
+            f"Power produced: {scaling_factor * power:.2f} kW",
             True,
             self.colors.black,
         )

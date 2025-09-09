@@ -50,7 +50,7 @@ class Solver:
         self.presmat = np.zeros(
             (self.ncells[0] * self.ncells[1], self.ncells[0] * self.ncells[1])
         )
-        self.presrhs = np.zeros((self.ncells[0] * self.ncells[1]))
+        self.presrhs = np.zeros(self.ncells[0] * self.ncells[1])
 
         # pressure is cell centered along x and y
         self.p = np.zeros((self.ncells[1] + 2, self.ncells[0] + 2))
@@ -79,7 +79,7 @@ class Solver:
 
     def solve(self, steps):
         """Solve the incompressible Euler equations."""
-        for step in range(steps):
+        for _step in range(steps):
             # Apply boundary conditions
             self.apply_velocity_bc()
 

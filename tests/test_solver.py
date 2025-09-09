@@ -3,8 +3,10 @@
 # is located in the top-level directory structure.
 
 import unittest
+
 import numpy as np
 import numpy.testing as npt
+
 import windcraft as wc
 
 

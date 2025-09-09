@@ -1,5 +1,5 @@
-from solver import Solver
 from plotcfd import plotflowfields
+from solver import Solver
 
 # main
 n = 16

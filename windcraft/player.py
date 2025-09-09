@@ -8,7 +8,9 @@
 #
 # ========================================================================
 import os
+
 import pygame
+
 import windcraft.colors as colors
 
 

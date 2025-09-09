@@ -75,3 +75,7 @@ warning-is-error = "1"
 
 [tool.setuptools]
 include-package-data = false
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "FLY", "I", "SIM", "UP", "W"]
+ignore = ["D203", "D212"]
