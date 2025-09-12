@@ -23,13 +23,15 @@ import matplotlib.pyplot as plt
 class Solver:
     """This represents the solver."""
 
-    def __init__(self, farm_width, farm_height):
+    def __init__(self, farm_width, farm_height, npoints):
         """Constructor for Solver.
 
         :param farm_width: wind farm width
         :type farm_width: int
         :param farm_height: wind farm height
         :type farm_height: int
+        :param npoints: grid resolution in y
+        :type npoints: int
         """
         # some enums
         self.West = 0
@@ -38,7 +40,6 @@ class Solver:
         self.North = 3
 
         # Geometry
-        npoints = 20
         self.height = 1.0
         self.width = self.height * farm_width / farm_height
 
@@ -125,7 +126,6 @@ class Solver:
         :type steps: list
         """
         self.power = 0
-        print("steps:", steps)
         for _step in range(steps):
             # Apply boundary conditions
             self.apply_velocity_bc()
@@ -134,7 +134,6 @@ class Solver:
             self.advectdiffuse()
             power = self.turbine_update(turbines)
             self.computediv()
-            print("velocity divergence before projection:", self.divl2norm)
 
             # Solve Poisson equation for pressure
             self.solve_pressure_poisson()
@@ -142,8 +141,6 @@ class Solver:
             # Project velocity
             self.project_velocity()
             self.computediv()
-            print("velocity divergence after projection:", self.divl2norm)
-            print("==================================================")
 
             # Turbines
 

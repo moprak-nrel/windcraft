@@ -44,6 +44,14 @@ def main():
         help="Launch in fullscreen mode",
         action="store_true",
     )
+    parser.add_argument(
+        "-g",
+        "--grid_resolution",
+        dest="grid_resolution",
+        help="Grid resolution",
+        type=int,
+        default=20,
+    )
     args = parser.parse_args()
 
     # Call this function so the Pygame library can initialize itself
@@ -80,7 +88,7 @@ def main():
     turbine_list = []
 
     # Solver
-    solver = wc.Solver(wind_farm.width, wind_farm.height)
+    solver = wc.Solver(wind_farm.width, wind_farm.height, args.grid_resolution)
     solver_steps = int(0.12 / (solver.dt * fps))
     if solver_steps <= 0:
         solver_steps = 30
