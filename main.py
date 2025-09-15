@@ -83,9 +83,24 @@ def main():
 
     # Turbines
     turbines = pygame.sprite.Group()
-    max_turbines = 100
     rotation_rate = fps / 6
     turbine_list = []
+
+    # Slider for max turbines
+    slider_width = 300
+    slider_height = 20
+    slider_x = (screen.get_width() - slider_width) // 2
+    slider_y = 0.95 * screen.get_height()
+    max_turbines_slider = wc.Slider(
+        slider_x,
+        slider_y,
+        slider_width,
+        slider_height,
+        1,
+        100,
+        15,
+        label="Max Turbines: ",
+    )
 
     # Solver
     solver = wc.Solver(wind_farm.width, wind_farm.height, args.grid_resolution)
@@ -130,33 +145,36 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if len(turbines) < max_turbines:
-                    turbine = wc.Turbine(wind_farm)
-                    pos = pygame.mouse.get_pos()
-                    success = turbine.place_turbine(pos, turbines, wind_farm)
-                    if success:
-                        turbines.add(turbine)
-                        allsprites.add(turbine)
-                        turbine_list.append(turbine)
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_q:
-                    done = True
-                elif event.key == pygame.K_r:
-                    solver.reset()
-                    for turbine in turbines:
-                        turbine.kill()
-                elif event.key == pygame.K_u:
-                    if len(turbine_list) > 0:
-                        turbine_list[-1].kill()
-                        turbine_list = turbine_list[:-1]
-                elif event.key == pygame.K_t:
-                    print("not implemented yet")
+            else:
+                max_turbines_slider.handle_event(event)
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if len(turbines) < max_turbines_slider.value:
+                        turbine = wc.Turbine(wind_farm)
+                        pos = pygame.mouse.get_pos()
+                        success = turbine.place_turbine(pos, turbines, wind_farm)
+                        if success:
+                            turbines.add(turbine)
+                            allsprites.add(turbine)
+                            turbine_list.append(turbine)
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_q:
+                        done = True
+                    elif event.key == pygame.K_r:
+                        solver.reset()
+                        for turbine in turbines:
+                            turbine.kill()
+                    elif event.key == pygame.K_u:
+                        if len(turbine_list) > 0:
+                            turbine_list[-1].kill()
+                            turbine_list = turbine_list[:-1]
+                    elif event.key == pygame.K_t:
+                        print("not implemented yet")
 
         # Solve flow field and draw
         solver.solve(solver_steps, turbines)
         solver.draw_field()
         wind_farm.update(solver.raw_canvas)
+        max_turbines_slider.draw(screen)
 
         # Update the player position
         player.update(wind_farm, turbines)
@@ -167,7 +185,7 @@ def main():
                 turbine.rotate()
 
         # Draw text
-        text.display(screen, len(turbines), max_turbines, solver.power)
+        text.display(screen, len(turbines), max_turbines_slider.value, solver.power)
 
         # Draw arrow
         arrow.display(screen)

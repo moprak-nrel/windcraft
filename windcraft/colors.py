@@ -20,7 +20,9 @@ class Colors:
     def __init__(self):
         """Constructor for Colors."""
         self.black = (0, 0, 0)
+        self.gray = (180, 180, 180)
         self.white = (255, 255, 255)
         self.red = (238, 46, 47)
         self.green = (0, 140, 72)
         self.nrel = (13, 115, 195)
+        self.purple = (80, 80, 220)
