@@ -80,24 +80,14 @@ class Text:
         # Instructions
         xstart = 0.97 * pygame.display.get_surface().get_width()
         ystart = 0.9 * pygame.display.get_surface().get_height()
-
-        text = self.fonts.types["medium"].render(
-            "[t] to toggle", True, self.colors.black
-        )
-        textpos = text.get_rect(right=xstart, bottom=ystart)
-        screen.blit(text, textpos)
-        text = self.fonts.types["medium"].render(
-            "[u] to undo  ", True, self.colors.black
-        )
-        textpos = text.get_rect(right=xstart, bottom=ystart)
-        screen.blit(text, [textpos[0], textpos[1] + self.yoffset])
-        text = self.fonts.types["medium"].render(
-            "[r] to reset ", True, self.colors.black
-        )
-        textpos = text.get_rect(right=xstart, bottom=ystart)
-        screen.blit(text, [textpos[0], textpos[1] + 2 * self.yoffset])
-        text = self.fonts.types["medium"].render(
-            "[q] to quit  ", True, self.colors.black
-        )
-        textpos = text.get_rect(right=xstart, bottom=ystart)
-        screen.blit(text, [textpos[0], textpos[1] + 3 * self.yoffset])
+        control_texts = [
+            "[u] to undo ",
+            "[r] to reset",
+            "[q] to quit ",
+        ]
+        for i, control_text in enumerate(control_texts):
+            text = self.fonts.types["medium"].render(
+                control_text, True, self.colors.black
+            )
+            textpos = text.get_rect(right=xstart, bottom=ystart)
+            screen.blit(text, [textpos[0], textpos[1] + i * self.yoffset])
