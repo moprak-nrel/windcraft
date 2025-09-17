@@ -52,6 +52,14 @@ def main():
         type=int,
         default=20,
     )
+    parser.add_argument(
+        "-p",
+        "--ideal_power",
+        dest="ideal_power",
+        help="Ideal generated power target in kW",
+        type=int,
+        default=350,
+    )
     args = parser.parse_args()
 
     # Call this function so the Pygame library can initialize itself
@@ -107,6 +115,9 @@ def main():
 
     # Text
     text = wc.Text()
+
+    # Bulbs
+    bulbs = wc.Bulbs(wind_farm.bulb_size)
 
     # Colors
     colors = wc.Colors()
@@ -167,7 +178,10 @@ def main():
                 turbine.rotate()
 
         # Draw text
-        text.display(screen, len(turbines), max_turbines, solver.power)
+        text.display(screen, len(turbines), max_turbines)
+
+        # Draw bulbs
+        bulbs.display(screen, solver.power, args.ideal_power)
 
         # Draw arrow
         arrow.display(screen)

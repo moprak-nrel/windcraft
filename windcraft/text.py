@@ -7,6 +7,7 @@
 # Imports
 #
 # ========================================================================
+
 import pygame
 
 import windcraft.colors as colors
@@ -27,7 +28,7 @@ class Text:
         self.fonts = fonts.Fonts()
         self.yoffset = 0.03 * pygame.display.get_surface().get_height()
 
-    def display(self, screen, num_turbines, max_turbines, power):
+    def display(self, screen, num_turbines, max_turbines):
         """Display the text on the screen.
 
         :param screen: pygame screen
@@ -64,18 +65,6 @@ class Text:
         #                                              True,
         #                                              self.colors.black)
         #     screen.blit(text, [textpos[0], textpos[1] + self.yoffset])
-
-        # Power
-        xstart = 0.5 * pygame.display.get_surface().get_width()
-        ystart = 0.15 * pygame.display.get_surface().get_height()
-        scaling_factor = 100
-        text = self.fonts.types["medium"].render(
-            f"Power produced: {scaling_factor * power:.2f} kW",
-            True,
-            self.colors.black,
-        )
-        textpos = text.get_rect(centerx=xstart, top=ystart)
-        screen.blit(text, textpos)
 
         # Instructions
         xstart = 0.97 * pygame.display.get_surface().get_width()
